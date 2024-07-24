@@ -1,4 +1,11 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:image_picker/image_picker.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -8,59 +15,102 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final ImagePicker picker = ImagePicker();
+  XFile? photo;
+  final GlobalKey _globalKey = GlobalKey();
+
+  _saveLocalImage() async {
+    RenderRepaintBoundary boundary =
+        _globalKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+    ui.Image image = await boundary.toImage();
+    ByteData? byteData =
+        await (image.toByteData(format: ui.ImageByteFormat.png));
+    if (byteData != null) {
+      final result =
+          await ImageGallerySaver.saveImage(byteData.buffer.asUint8List());
+      print(result);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Image saved successfully'),
+      ));
+
+      // Utils.toast(result.toString());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        title: const Text(
-          'Flutter Latihan',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        elevation: 3,
-        backgroundColor: Color.fromARGB(255, 251, 2, 2),
-        actions: [
-          Icon(
-            Icons.person,
+    return Center(
+      child: Scaffold(
+        appBar: AppBar(
+          centerTitle: true,
+          title: const Text(
+            'Flutter Basic',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          elevation: 3,
+          backgroundColor: Color.fromARGB(255, 1, 118, 5),
+          actions: const [
+            Icon(
+              Icons.person,
+              color: Colors.white,
+            ),
+            SizedBox(
+              width: 10,
+            ),
+            Icon(
+              Icons.settings,
+              color: Colors.white,
+            ),
+            SizedBox(
+              width: 10,
+            ),
+          ],
+          leading: const Icon(
+            Icons.menu,
             color: Colors.white,
           ),
-          SizedBox(
-            width: 10,
-          ),
-          Icon(
-            Icons.settings,
-            color: Colors.white,
-          ),
-          SizedBox(
-            width: 10,
-          ),
-        ],
-        leading: const Icon(
-          Icons.menu,
-          color: Colors.white,
         ),
-      ),
-      body: Column(
-        children: [
-          Container(
-              padding: EdgeInsets.all(16),
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                color: Color.fromARGB(255, 64, 110, 224),
-                borderRadius: BorderRadius.circular(20),
+        body: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              RepaintBoundary(
+                key: _globalKey,
+                child: Container(
+                  alignment: Alignment.center,
+                  // width: 300,
+                  height: 300,
+                  color: Colors.blue,
+                  child: photo == null
+                      ? const SizedBox()
+                      : Image.file(File(photo!.path)),
+                ),
               ),
-              child: Image.network(
-                  'https://img.freepik.com/free-vector/thai-cuisine-food-flat-illustration_1284-74042.jpg?t=st=1717555903~exp=1717559503~hmac=c5d278298be37dd07e406513fd32d35788a4794c2005e12612a6a1e729dc671e&w=740')),
-          Image.asset(
-            'assets/images/img1.jpg',
+            ],
           ),
-          const CircleAvatar(
-            radius: 50,
-            backgroundImage: NetworkImage(
-                'https://img.freepik.com/free-vector/thai-cuisine-food-flat-illustration_1284-74042.jpg?t=st=1717555903~exp=1717559503~hmac=c5d278298be37dd07e406513fd32d35788a4794c2005e12612a6a1e729dc671e&w=740'),
-          )
-        ],
+          const SizedBox(
+            height: 20,
+          ),
+          ElevatedButton(
+              onPressed: () {
+                _saveLocalImage();
+              },
+              child: Text(
+                'Save To Gallery',
+                style: TextStyle(color: Colors.black),
+              ))
+        ]),
+        floatingActionButton: FloatingActionButton(
+          backgroundColor: Colors.green[800],
+          onPressed: () async {
+            photo = await picker.pickImage(source: ImageSource.camera);
+            setState(() {});
+          },
+          child: Icon(
+            Icons.camera,
+            color: Colors.white,
+          ),
+        ),
       ),
     );
   }
